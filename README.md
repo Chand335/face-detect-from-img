@@ -25,7 +25,7 @@ A Python application that detects faces in images using OpenCV.
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd python-face-delect-from-image
+cd face-detect-from-img
 ```
 
 2. Install the required packages:
