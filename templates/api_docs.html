@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Face Detection API Documentation</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      pre {
+        background-color: #f5f5f5;
+        padding: 15px;
+        border-radius: 5px;
+        overflow-x: auto;
+      }
+      code {
+        background-color: #f5f5f5;
+        padding: 2px 5px;
+        border-radius: 3px;
+      }
+      .endpoint {
+        margin: 30px 0;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .method {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 3px;
+        background-color: #4caf50;
+        color: white;
+        font-weight: bold;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f5f5f5;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Face Detection API Documentation</h1>
+    <p>
+      This API provides face detection capabilities through various input
+      methods. You can send images via URL, base64-encoded string, or file
+      upload.
+    </p>
+
+    <div class="endpoint">
+      <h2><span class="method">POST</span> /api/v1/detect</h2>
+      <p>Detects faces in the provided image and returns their coordinates.</p>
+
+      <h3>Input Methods</h3>
+      <h4>1. URL Input</h4>
+      <pre>
+{
+    "url": "https://example.com/image.jpg"
+}</pre
+      >
+
+      <h4>2. Base64 Input</h4>
+      <pre>
+{
+    "image": "base64_encoded_image_data"
+}</pre
+      >
+
+      <h4>3. File Upload</h4>
+      <p>Send as multipart/form-data with field name "image"</p>
+
+      <h3>Response Format</h3>
+      <pre>
+{
+    "face_count": 2,
+    "faces": [
+        {
+            "x": 100,
+            "y": 150,
+            "width": 200,
+            "height": 200
+        },
+        {
+            "x": 300,
+            "y": 350,
+            "width": 200,
+            "height": 200
+        }
+    ],
+    "message": "Detected 2 faces in the image"
+}</pre
+      >
+
+      <h3>Response Fields</h3>
+      <table>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>face_count</td>
+          <td>integer</td>
+          <td>Number of faces detected in the image</td>
+        </tr>
+        <tr>
+          <td>faces</td>
+          <td>array</td>
+          <td>List of face coordinates and dimensions</td>
+        </tr>
+        <tr>
+          <td>message</td>
+          <td>string</td>
+          <td>Human-readable description of the result</td>
+        </tr>
+      </table>
+
+      <h3>Example Usage</h3>
+      <h4>Using cURL with URL:</h4>
+      <pre>
+curl -X POST -H "Content-Type: application/json" \
+    -d '{"url":"https://example.com/image.jpg"}' \
+    http://localhost:5001/api/v1/detect</pre
+      >
+
+      <h4>Using cURL with file upload:</h4>
+      <pre>
+curl -X POST -F "image=@local_image.jpg" \
+    http://localhost:5001/api/v1/detect</pre
+      >
+
+      <h4>Using Python with requests:</h4>
+      <pre>
+import requests
+
+# Using URL
+response = requests.post('http://localhost:5001/api/v1/detect',
+                        json={'url': 'https://example.com/image.jpg'})
+
+# Using local file
+with open('local_image.jpg', 'rb') as f:
+    response = requests.post('http://localhost:5001/api/v1/detect',
+                           files={'image': f})
+
+result = response.json()
+print(f"Detected {result['face_count']} faces")</pre
+      >
+
+      <h4>Using Laravel:</h4>
+      <pre>
+// Using HTTP Client (Laravel 8+)
+use Illuminate\Support\Facades\Http;
+
+// Using URL
+public function detectFacesFromUrl($imageUrl)
+{
+    $response = Http::post('http://localhost:5001/api/v1/detect', [
+        'url' => $imageUrl
+    ]);
+
+    return $response->json();
+}
+
+// Using local file
+public function detectFacesFromFile($request)
+{
+    $image = $request->file('image');
+    
+    // Method 1: Using multipart/form-data
+    $response = Http::attach(
+        'image',
+        file_get_contents($image->path()),
+        $image->getClientOriginalName()
+    )->post('http://localhost:5001/api/v1/detect');
+
+    // Method 2: Using base64
+    $base64Image = base64_encode(file_get_contents($image->path()));
+    $response = Http::post('http://localhost:5001/api/v1/detect', [
+        'image' => $base64Image
+    ]);
+
+    return $response->json();
+}
+
+// Example Controller
+class FaceDetectionController extends Controller
+{
+    public function detect(Request $request)
+    {
+        try {
+            if ($request->has('url')) {
+                $result = $this->detectFacesFromUrl($request->url);
+            } elseif ($request->hasFile('image')) {
+                $result = $this->detectFacesFromFile($request);
+            } else {
+                return response()->json(['error' => 'No image provided'], 400);
+            }
+
+            return response()->json($result);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+}
+
+// Example Route
+Route::post('/detect-faces', [FaceDetectionController::class, 'detect']);
+
+// Example Blade View
+&lt;!-- Blade View: resources/views/face-detection.blade.php --&gt;
+&lt;form action="/detect-faces" method="POST" enctype="multipart/form-data"&gt;
+    &#64;csrf
+    &lt;input type="file" name="image"&gt;
+    &lt;button type="submit"&gt;Detect Faces&lt;/button&gt;
+&lt;/form&gt;
+
+// Example JavaScript/Axios
+&lt;script&gt;
+// Using URL
+axios.post('/detect-faces', {
+    url: 'https://example.com/image.jpg'
+})
+.then(response => {
+    console.log(`Detected ${response.data.face_count} faces`);
+})
+.catch(error => {
+    console.error('Error:', error);
+});
+
+// Using File Upload
+const formData = new FormData();
+formData.append('image', fileInput.files[0]);
+
+axios.post('/detect-faces', formData, {
+    headers: {
+        'Content-Type': 'multipart/form-data'
+    }
+})
+.then(response => {
+    console.log(`Detected ${response.data.face_count} faces`);
+})
+.catch(error => {
+    console.error('Error:', error);
+});
+&lt;/script&gt;</pre
+      >
+
+      <h3>Error Responses</h3>
+      <table>
+        <tr>
+          <th>Status Code</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>400</td>
+          <td>Bad Request - Invalid input format or missing data</td>
+        </tr>
+        <tr>
+          <td>500</td>
+          <td>Internal Server Error - Error processing the image</td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>
